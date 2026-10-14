@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Termo Acelera</title>
+<link rel="icon" href="favicon.ico">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#1E3A5F; --navy-dark:#142A45; --bg:#EEF1F5; --ink:#23303F; --muted:#64748B;
+    --paper:#fff; --paper-edge:#D7DEE6; --line:#CBD5E1; --green:#1E7A4C; --warn:#B45309;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; }
+
+  header.top{ background:#fff; border-bottom:1px solid #E4E8EE; padding:18px 24px; }
+  header.top .wrap{ max-width:1280px; margin:0 auto; display:flex; align-items:center; gap:16px; }
+  header.top img{ height:56px; width:auto; }
+  header.top h1{ margin:0; font-size:26px; color:var(--navy-dark); }
+
+  main{ max-width:1280px; margin:24px auto; padding:0 24px; display:grid;
+    grid-template-columns:380px 1fr; gap:24px; align-items:start; }
+  @media (max-width:980px){ main{ grid-template-columns:1fr; } }
+
+  .panel{ background:#fff; border:1px solid var(--paper-edge); border-radius:12px; padding:20px; }
+  .panel h2{ margin:0 0 4px; font-size:16px; color:var(--navy-dark); }
+  .panel .sub{ margin:0 0 16px; font-size:12.5px; color:var(--muted); }
+  .field{ margin-bottom:12px; }
+  .field label{ display:block; font-size:12px; font-weight:600; color:var(--muted); margin-bottom:4px; }
+  .field input{ width:100%; padding:9px 10px; font-size:14px; border:1px solid var(--line);
+    border-radius:8px; background:#fff; color:var(--ink); }
+  .field input:focus{ outline:2px solid #93B4DA; border-color:#93B4DA; }
+  .field input.filled{ border-color:#34B97A; background:#F3FBF7; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .progress{ height:8px; background:#E2E8F0; border-radius:99px; overflow:hidden; margin:4px 0 6px; }
+  .progress > div{ height:100%; width:0; background:#2DBE74; transition:width .25s; }
+  .progress-txt{ font-size:12px; color:var(--muted); margin-bottom:16px; font-weight:600; }
+
+  .actions{ display:flex; gap:10px; margin-top:16px; flex-wrap:wrap; }
+  button{ font:inherit; cursor:pointer; border-radius:8px; padding:10px 18px; font-weight:700; font-size:14px; }
+  .btn-pdf{ background:var(--green); color:#fff; border:none; flex:1; }
+  .btn-pdf:hover{ background:#176540; }
+  .btn-clear{ background:#fff; color:var(--navy); border:1px solid var(--line); }
+  .btn-clear:hover{ background:#F1F5F9; }
+
+  .sheet-wrap{ overflow:auto; padding-bottom:12px; }
+
+  /* ---------- Folha: Termo Acelera (mesmo layout do sistema original) ---------- */
+  .sheet{
+    background:var(--paper); width:8.5in; min-height:11in; margin:0 auto;
+    box-shadow:0 2px 6px rgba(20,30,50,.08), 0 12px 30px rgba(20,30,50,.10);
+    border:1px solid var(--paper-edge); padding:0.7in 0.85in 0.5in;
+    font-family:Arial,Helvetica,sans-serif; font-size:10.2pt; line-height:1.35; color:#111;
+    display:flex; flex-direction:column;
+  }
+  .acelera-title{ text-align:center; font-weight:bold; font-size:15px; margin-top:12pt; margin-bottom:14pt; }
+  .acelera-subtitle{ text-align:center; font-weight:bold; font-size:15px; margin-bottom:14pt; }
+  .acelera-section-hdr{ font-weight:bold; font-size:12px; margin-bottom:10pt; }
+  .acelera-doc-table{ border:1.1px solid #000; width:100%; }
+  .acelera-doc-table .frow{ display:flex; border-bottom:1px solid #000; }
+  .acelera-doc-table .frow:last-child{ border-bottom:none; }
+  .acelera-doc-table .fcell{ border-right:1px solid #000; padding:4px 6px; min-width:0;
+    overflow-wrap:break-word; word-break:break-word; }
+  .acelera-doc-table .fcell:last-child{ border-right:none; }
+  .acelera-doc-table .lbl{ display:block; font-size:8.5px; font-weight:normal; margin-bottom:6pt; }
+  .acelera-doc-table .val{ font-size:9px; }
+  .acelera-para-block{ margin-top:20pt; font-size:10px; line-height:1.45; text-align:justify; }
+  .acelera-para-block p{ margin:0 0 8pt; }
+  .acelera-para-block p:last-child{ margin-bottom:0; }
+  .acelera-sig-section{ margin-top:12pt; font-size:9.5px; }
+  .acelera-sig-caption{ font-size:9px; border-top:1px solid #000; padding-top:2pt;
+    display:inline-block; min-width:220px; }
+  .acelera-sig-gap-1{ height:10mm; }
+  .acelera-sig-gap-2{ height:16mm; }
+  .ph{ color:var(--warn); font-style:italic; }
+
+
+  /* ---------- Seletor GCM -> Loja ---------- */
+  .gcm-wrap{ max-width:1280px; margin:20px auto 0; padding:0 24px; }
+  .gcm-box{ background:#fff; border:1px solid var(--paper-edge); border-radius:12px; padding:16px 20px; }
+  .gcm-head{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .gcm-head h2{ margin:0; font-size:16px; color:var(--navy-dark); flex:1; min-width:200px; }
+  .gcm-head input[type=search]{ padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:13px; width:240px; }
+  .gcm-head .mini{ padding:7px 12px; font-size:12px; font-weight:600; background:#fff; color:var(--navy); border:1px solid var(--line); }
+  .gcm-head .mini:hover{ background:#F1F5F9; }
+  .gcm-list{ max-height:300px; overflow:auto; border:1px solid #E4E8EE; border-radius:10px; }
+  .gcm-item{ border-bottom:1px solid #E4E8EE; }
+  .gcm-item:last-child{ border-bottom:none; }
+  .gcm-row{ width:100%; display:flex; align-items:center; gap:10px; background:#fff; border:none; border-radius:0;
+    padding:11px 14px; text-align:left; font-size:14px; font-weight:700; color:var(--navy-dark); }
+  .gcm-row:hover{ background:#F6F8FB; }
+  .gcm-row .chev{ transition:transform .15s; color:var(--muted); font-size:12px; }
+  .gcm-item.open .chev{ transform:rotate(90deg); }
+  .gcm-row .name{ flex:1; }
+  .gcm-row .count{ background:#E2E8F0; color:var(--ink); border-radius:99px; padding:2px 10px; font-size:12px; font-weight:700; }
+  .gcm-item.sem .gcm-row .name{ color:var(--muted); font-style:italic; }
+  .loja-list{ display:none; background:#F8FAFC; padding:6px 10px 10px 34px; }
+  .gcm-item.open .loja-list{ display:block; }
+  .loja{ width:100%; display:flex; gap:10px; align-items:center; justify-content:space-between; text-align:left;
+    background:#fff; border:1px solid #E4E8EE; border-radius:8px; padding:9px 12px; margin-top:6px;
+    font-weight:600; font-size:13px; color:var(--ink); }
+  .loja:hover{ border-color:#93B4DA; background:#F3F8FF; }
+  .loja.sel{ border-color:#34B97A; background:#F3FBF7; }
+  .loja .cnpj{ font-weight:400; color:var(--muted); font-size:12px; white-space:nowrap; }
+  .loja .tag{ font-size:11px; font-weight:700; color:var(--warn); background:#FEF3C7; border-radius:6px; padding:2px 6px; margin-left:6px; }
+  .gcm-msg{ font-size:12.5px; color:var(--muted); margin-top:10px; min-height:18px; }
+  .gcm-msg.ok{ color:var(--green); font-weight:600; }
+  .gcm-empty{ padding:16px; color:var(--muted); font-size:13px; }
+  @media print{ .gcm-wrap{ display:none !important; } }
+
+  /* Aviso antes de salvar */
+  .modal{ position:fixed; inset:0; background:rgba(15,23,42,.55); display:none;
+    align-items:center; justify-content:center; z-index:50; padding:20px; }
+  .modal.show{ display:flex; }
+  .modal .box{ background:#fff; border-radius:14px; padding:24px; max-width:420px; width:100%; }
+  .modal h3{ margin:0 0 8px; color:var(--navy-dark); }
+  .modal p{ margin:0 0 18px; font-size:14px; color:var(--ink); line-height:1.5; }
+  .modal .btns{ display:flex; gap:10px; justify-content:flex-end; }
+  .modal .ok{ background:var(--green); color:#fff; border:none; }
+
+  @media print{
+    body{ margin:0; background:#fff; }
+    header.top, .panel, .modal{ display:none !important; }
+    main{ display:block; padding:0; margin:0; max-width:none; }
+    .sheet-wrap{ overflow:visible; padding:0; }
+    .sheet{ margin:0; box-shadow:none; border:none; min-height:0; }
+    .ph{ color:inherit; font-style:normal; }
+    @page{ size:letter; margin:0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <img src="logo.png" alt="Car Bank" onerror="this.style.display='none'">
+    <h1>Termo Acelera</h1>
+  </div>
+</header>
+
+<section class="gcm-wrap">
+  <div class="gcm-box">
+    <div class="gcm-head">
+      <h2>Selecione o GCM e a loja</h2>
+      <input type="search" id="gcm-busca" placeholder="Buscar GCM, loja ou CNPJ…">
+      <button type="button" class="mini" id="btn-planilha">📂 Atualizar planilha</button>
+      <button type="button" class="mini" id="btn-padrao" style="display:none;">Restaurar lista original</button>
+      <input type="file" id="file-planilha" accept=".xlsx,.xls" style="display:none;">
+    </div>
+    <div class="gcm-list" id="gcm-list"></div>
+    <div class="gcm-msg" id="gcm-msg">Clique em um GCM para ver as lojas e escolha uma para preencher os dados.</div>
+  </div>
+</section>
+
+<main>
+  <!-- ===== Formulário ===== -->
+  <section class="panel">
+    <h2>Dados da loja</h2>
+    <p class="sub">Preencha os campos — o Termo de Anuência ao lado é atualizado na hora.</p>
+
+    <div class="progress"><div id="bar"></div></div>
+    <div class="progress-txt" id="bar-txt">0% dos campos preenchidos</div>
+
+    <div class="field">
+      <label for="razao_social">Razão social</label>
+      <input type="text" id="razao_social" autocomplete="off">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="cnpj">CNPJ</label>
+        <input type="text" id="cnpj" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="numero_dn">Número DN</label>
+        <input type="text" id="numero_dn" autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <label for="endereco_sede">Endereço (rua/av.)</label>
+      <input type="text" id="endereco_sede" autocomplete="off">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="numero_sede">Nº</label>
+        <input type="text" id="numero_sede" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="complemento_sede">Complemento</label>
+        <input type="text" id="complemento_sede" maxlength="7" autocomplete="off">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="bairro_sede">Bairro</label>
+        <input type="text" id="bairro_sede" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="cidade_sede">Cidade</label>
+        <input type="text" id="cidade_sede" autocomplete="off">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="estado_sede">UF</label>
+        <input type="text" id="estado_sede" maxlength="2" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="telefone">Telefone (DDD + nº)</label>
+        <input type="text" id="telefone" inputmode="numeric" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn-clear" id="btn-limpar">Limpar campos</button>
+      <button type="button" class="btn-pdf" id="btn-pdf">🖨️ Salvar PDF</button>
+    </div>
+  </section>
+
+  <!-- ===== Pré-visualização ===== -->
+  <div class="sheet-wrap">
+    <div class="sheet" id="sheet-acelera">
+
+      <div class="acelera-title">TERMO DE ANUÊNCIA - CONCESSIONÁRIA/LOJISTA</div>
+      <div class="acelera-subtitle">PROGRAMA ACELERA</div>
+
+      <div class="acelera-section-hdr">CONCESSIONÁRIA/LOJISTA</div>
+
+      <div class="acelera-doc-table">
+        <div class="frow">
+          <div class="fcell" style="width:74.5%;">
+            <span class="lbl">Razão Social:</span>
+            <span class="val out" data-field="razao_social" data-ph="[Razão Social]">[Razão Social]</span>
+          </div>
+          <div class="fcell" style="width:25.5%;">
+            <span class="lbl">Número DN:</span>
+            <span class="val out" data-field="numero_dn" data-ph="&nbsp;">&nbsp;</span>
+          </div>
+        </div>
+
+        <div class="frow">
+          <div class="fcell" style="width:100%;">
+            <span class="lbl">Endereço (Rua/Avenida, nº, compl.):</span>
+            <span class="val out" data-field="endereco_sede" data-ph="&nbsp;">&nbsp;</span>
+          </div>
+        </div>
+
+        <div class="frow">
+          <div class="fcell" style="width:49.6%;">
+            <span class="lbl">Número e complemento</span>
+            <span class="val">Nº <span class="out" data-field="numero_sede" data-ph="&nbsp;">&nbsp;</span><span class="out" data-field="complemento_sede" data-ph="">&nbsp;</span></span>
+          </div>
+          <div class="fcell" style="width:50.4%;">
+            <span class="lbl">Bairro :</span>
+            <span class="val out" data-field="bairro_sede" data-ph="&nbsp;">&nbsp;</span>
+          </div>
+        </div>
+
+        <div class="frow">
+          <div class="fcell" style="width:24.8%;">
+            <span class="lbl">Cidade :</span>
+            <span class="val out" data-field="cidade_sede" data-ph="&nbsp;">&nbsp;</span>
+          </div>
+          <div class="fcell" style="width:24.8%;">
+            <span class="lbl">UF :</span>
+            <span class="val out" data-field="estado_sede" data-ph="&nbsp;">&nbsp;</span>
+          </div>
+          <div class="fcell" style="width:24.8%;">
+            <span class="lbl">Tel. (DDD Nº) :</span>
+            <span class="val out" data-field="telefone" data-ph="&nbsp;">&nbsp;</span>
+          </div>
+          <div class="fcell" style="width:25.6%;">
+            <span class="lbl">CNPJ Principal</span>
+            <span class="val out" data-field="cnpj" data-ph="[CNPJ]">[CNPJ]</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="acelera-para-block">
+        <p><b>CONCESSIONÁRIA/LOJISTA</b> acima identificado, declara estar de acordo com a participação de todos os integrantes de sua equipe de Vendas no Programa Acelera (&ldquo;Programa&rdquo;), do Banco Volkswagen S.A., cujas regras gerais de participação no Programa estão disponíveis no link <span style="color:#0563C1; text-decoration:underline;">Regulamento_Equipes de Vendas.docx</span>, incluindo as regras de elegibilidade, pontuação, premiação, resgate de pontos e entrega da premiação.</p>
+        <p>A adesão dos participantes ao Programa é gratuita e será realizada através de cadastro no portal de relacionamento do Programa (www.programaacelera.com.br).</p>
+        <p>E assim, por estar de acordo com os termos deste instrumento, <b>CONCESSIONÁRIA/LOJISTA</b> adere ao presente Termo de Anuência.</p>
+      </div>
+
+      <div class="acelera-sig-section">
+        <div style="font-weight:bold;">CONCESSIONÁRIA/LOJISTA:</div>
+
+        <div class="acelera-sig-gap-1"></div>
+        <div class="acelera-sig-caption">Assinatura do Representante Legal 1 (Assinatura eletrônica)</div>
+        <div style="margin-top:6px;">CNPJ : <span class="out" data-field="cnpj" data-ph="[CNPJ]">[CNPJ]</span></div>
+
+        <div class="acelera-sig-gap-2"></div>
+        <div class="acelera-sig-caption">Assinatura do Representante Legal 2 (Assinatura eletrônica)</div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- Aviso antes de salvar o PDF -->
+<div class="modal" id="modal">
+  <div class="box">
+    <h3>Salvar como PDF</h3>
+    <p>Na janela de impressão que vai abrir, escolha <b>"Salvar como PDF"</b> (ou <b>"Save as PDF"</b>) em Destino/Impressora.</p>
+    <div class="btns">
+      <button type="button" class="btn-clear" id="modal-cancel">Cancelar</button>
+      <button type="button" class="ok" id="modal-ok">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var FIELDS = ["razao_social","cnpj","numero_dn","endereco_sede","numero_sede",
+                "complemento_sede","bairro_sede","cidade_sede","estado_sede","telefone"];
+  var OBRIGATORIOS = ["razao_social","cnpj","endereco_sede","numero_sede",
+                      "bairro_sede","cidade_sede","estado_sede","telefone"]; // Nº DN e complemento são opcionais
+  var STORAGE_KEY = "termo_acelera_v1";
+  var TITULO_PADRAO = document.title;
+
+  function el(id){ return document.getElementById(id); }
+
+  function formatarCnpj(v){
+    var d = v.replace(/\D/g,"").slice(0,14);
+    if(d.length <= 11){
+      if(d.length > 9) return d.slice(0,3)+"."+d.slice(3,6)+"."+d.slice(6,9)+"-"+d.slice(9);
+      if(d.length > 6) return d.slice(0,3)+"."+d.slice(3,6)+"."+d.slice(6);
+      if(d.length > 3) return d.slice(0,3)+"."+d.slice(3);
+      return d;
+    }
+    var r = d.slice(0,2)+"."+d.slice(2,5)+"."+d.slice(5,8)+"/"+d.slice(8,12);
+    if(d.length > 12) r += "-"+d.slice(12);
+    return r;
+  }
+
+  // (011) 99399-3171
+  function formatarTelefone(v){
+    var d = v.replace(/\D/g,"").slice(0,12);
+    if(!d) return "";
+    var f = "(" + d.slice(0,3);
+    if(d.length >= 3) f += ") ";
+    f += d.slice(3,8);
+    if(d.length > 8) f += "-" + d.slice(8,12);
+    return f;
+  }
+
+  function load(){
+    try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }catch(e){ return {}; }
+  }
+  function save(data){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){}
+  }
+
+  function render(){
+    var data = {}, preenchidos = 0;
+    FIELDS.forEach(function(f){
+      var input = el(f);
+      var val = (input.value || "").trim();
+      data[f] = input.value;
+
+      document.querySelectorAll('.out[data-field="'+f+'"]').forEach(function(out){
+        if(val){ out.textContent = val; out.classList.remove("ph"); }
+        else   { out.innerHTML = out.getAttribute("data-ph"); out.classList.add("ph"); }
+      });
+      input.classList.toggle("filled", !!val);
+      if(val && OBRIGATORIOS.indexOf(f) !== -1) preenchidos++;
+    });
+    var pct = Math.round(preenchidos / OBRIGATORIOS.length * 100);
+    el("bar").style.width = pct + "%";
+    el("bar-txt").textContent = pct + "% dos campos obrigatórios preenchidos";
+    save(data);
+  }
+
+  // Nome do arquivo: "3 Acelera_PRIMEIRONOME - CNPJ" (mesmo padrão do sistema completo)
+  function nomeArquivo(){
+    var raz = (el("razao_social").value || "").trim();
+    var primeira = (raz.split(/\s+/)[0] || "")
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .toUpperCase().replace(/[^A-Z0-9]/g,"");
+    var cnpj = (el("cnpj").value || "").replace(/\D/g,"");
+    var nome = "3 Acelera";
+    if(primeira) nome += "_" + primeira;
+    if(cnpj) nome += " - " + cnpj;
+    return nome;
+  }
+
+  function imprimir(){
+    document.title = nomeArquivo();
+    window.print();
+  }
+  window.addEventListener("afterprint", function(){ document.title = TITULO_PADRAO; });
+
+  function init(){
+    var saved = load();
+    FIELDS.forEach(function(f){
+      var input = el(f);
+      if(saved[f]) input.value = saved[f];
+      input.addEventListener("input", function(){
+        if(f === "cnpj") input.value = formatarCnpj(input.value);
+        if(f === "telefone") input.value = formatarTelefone(input.value);
+        if(f === "estado_sede") input.value = input.value.toUpperCase();
+        render();
+      });
+    });
+
+    el("btn-limpar").addEventListener("click", function(){
+      if(!confirm("Limpar todos os campos?")) return;
+      FIELDS.forEach(function(f){ el(f).value = ""; });
+      selecionada = null;
+      if(typeof desenharLista === "function") desenharLista();
+      render();
+    });
+
+    var modal = el("modal");
+    el("btn-pdf").addEventListener("click", function(){ modal.classList.add("show"); });
+    el("modal-cancel").addEventListener("click", function(){ modal.classList.remove("show"); });
+    el("modal-ok").addEventListener("click", function(){ modal.classList.remove("show"); imprimir(); });
+    modal.addEventListener("click", function(e){ if(e.target === modal) modal.classList.remove("show"); });
+    document.addEventListener("keydown", function(e){ if(e.key === "Escape") modal.classList.remove("show"); });
+
+    render();
+  }
+  init();
+
+  /* ================= Lista GCM -> Lojas ================= */
+  var LOJAS_PADRAO = [{"dn":"60380","razao":"POMPEO AUTOMOVEIS LTDA","cnpj":"08254835000180","termo":"PENDENTE TERMO ASSINADO","gcm":"JANAINA DE SOUZA LIMA","end":"RUA ANTON PHILIPS","num":"1"},{"dn":"60435","razao":"BBS VEÍCULOS AUTOS E NEGÓCIOS LTDA","cnpj":"27137540000178","termo":"PENDENTE TERMO ASSINADO","gcm":"EDIVANIA FRANCISCA MARCHIORI","end":"RUA ANDARAI","num":"564"},{"dn":"60550","razao":"TALITA ISVI DE JESUS E SILVA DOS SANTOS","cnpj":"26073571000140","termo":"NÃO PARTICIPA DO PROGRAMA","gcm":"PAOLINE HELENA DE SOUZA AGUIAR","end":"RUA VILMA","num":"1"},{"dn":"60605","razao":"NOVA INFINITY COMERCIO DE VEICULOS LTDA","cnpj":"08681023000110","termo":"PENDENTE TERMO ASSINADO","gcm":"PAOLINE HELENA DE SOUZA AGUIAR","end":"AVENIDA SAO MIGUEL","num":"1068"},{"dn":"60614","razao":"M S L VEICULOS LTDA","cnpj":"44660908000105","termo":"PENDENTE TERMO ASSINADO","gcm":"PAOLINE HELENA DE SOUZA AGUIAR","end":"AVENIDA SAO MIGUEL","num":"1068"},{"dn":"60621","razao":"CARLOS EDUARDO ALVES COM DE AUTOMOVEIS","cnpj":"28315798000180","termo":"PENDENTE TERMO ASSINADO","gcm":"SEM GCM","end":"","num":""},{"dn":"60632","razao":"C. H. HAGIWARA VEICULOS","cnpj":"33980523000109","termo":"PENDENTE TERMO ASSINADO","gcm":"ADILSON VIEIRA DE LIMA","end":"RUA GALILEU MENON","num":"159"},{"dn":"60708","razao":"FD MOTORS MULTIMARCAS EIRELI","cnpj":"33776103000105","termo":"PENDENTE TERMO ASSINADO","gcm":"ADILSON VIEIRA DE LIMA","end":"AVENIDA ITAQUERA","num":"1613"},{"dn":"60732","razao":"LGM COMERCIO DE VEICULOS LTDA","cnpj":"34523883000136","termo":"PENDENTE TERMO ASSINADO","gcm":"PAOLINE HELENA DE SOUZA AGUIAR","end":"AVENIDA SAO MIGUEL","num":"1068"},{"dn":"60788","razao":"RENATO MARTINS","cnpj":"27077421000177","termo":"PENDENTE TERMO ASSINADO","gcm":"PAOLINE HELENA DE SOUZA AGUIAR","end":"AVENIDA SAO MIGUEL","num":"7357"},{"dn":"60829","razao":"PIETRO MULTIMARCAS","cnpj":"26201518000187","termo":"PENDENTE TERMO ASSINADO","gcm":"SEM GCM","end":"","num":""},{"dn":"60864","razao":"PLENTYCAR COMÉRCIO DE VEÍCULOS LTDA","cnpj":"06037209000106","termo":"PENDENTE TERMO ASSINADO","gcm":"BARBARA APARECIDA ALVES VARA","end":"AVENIDA AGUA FRIA","num":"698"},{"dn":"60976","razao":"A MATOS COM DE VEICULOS EIRELI","cnpj":"34661120000151","termo":"PENDENTE TERMO ASSINADO","gcm":"SANDRA AKEMI KIMURA","end":"RUA OTAVIO TARQUINIO DE SOUSA","num":"901"},{"dn":"60977","razao":"M . VAZ COM DE VEÍCULOS LTDA","cnpj":"15748196000174","termo":"PENDENTE TERMO ASSINADO","gcm":"SANDRA AKEMI KIMURA","end":"RUA OTAVIO TARQUINIO DE SOUSA","num":"1034"},{"dn":"61257","razao":"LUIZ APARECIDO FERRARESI","cnpj":"02079560000109","termo":"PENDENTE TERMO ASSINADO","gcm":"LAZARO BATISTA DO NASCIMENTO","end":"ESTRADA SAO PAULO MOGI","num":"3668"},{"dn":"61399","razao":"A. V. COMERCIO DE MOTOS E AUTOMOVEIS LTDA","cnpj":"68301555000107","termo":"PENDENTE TERMO ASSINADO","gcm":"EDIVANIA FRANCISCA MARCHIORI","end":"AVENIDA GUAPIRA","num":"1743"},{"dn":"61434","razao":"HUMBERTO CURY SACCHETTO","cnpj":"31046791000114","termo":"PENDENTE TERMO ASSINADO","gcm":"SANDRA AKEMI KIMURA","end":"","num":""},{"dn":"61443","razao":"NATTA MOTORS COM E CONS LTDA","cnpj":"29293196000131","termo":"PENDENTE TERMO ASSINADO","gcm":"SANDRA AKEMI KIMURA","end":"RUA ALVORADA","num":"1289"},{"dn":"61517","razao":"PRIMO'S CAR VEICULOS LTDA","cnpj":"03523857000184","termo":"PENDENTE TERMO ASSINADO","gcm":"SANDRA AKEMI KIMURA","end":"AVENIDA ENGENHEIRO CAETANO ALVARES","num":"3906"},{"dn":"61577","razao":"FLASH COMERCIO DE VEICULOS MULTIMARCAS LTDA","cnpj":"18536509000119","termo":"PENDENTE TERMO ASSINADO","gcm":"BARBARA APARECIDA ALVES VARA","end":"AVENIDA JOAO PAULO I","num":"1555"},{"dn":"61780","razao":"J E G DE MORAES AUTOS","cnpj":"08367469000175","termo":"NÃO PARTICIPA DO PROGRAMA","gcm":"PAOLINE HELENA DE SOUZA AGUIAR","end":"AVENIDA NORDESTINA","num":"4567"},{"dn":"61846","razao":"ALEX CAR VEICULOS LTDA","cnpj":"05040447000108","termo":"PENDENTE TERMO ASSINADO","gcm":"ADILSON VIEIRA DE LIMA","end":"AVENIDA REGENTE FEIJO","num":"271"},{"dn":"61876","razao":"JR COMERCIO DE VEICULOS E INTERMEDIAÇÃO LTDA","cnpj":"24994059000100","termo":"PENDENTE TERMO ASSINADO","gcm":"ADILSON VIEIRA DE LIMA","end":"RUA EMILIA MARENGO","num":"377"},{"dn":"61918","razao":"PIRES & PIRES LTDA","cnpj":"59583245000131","termo":"PENDENTE TERMO ASSINADO","gcm":"ADILSON VIEIRA DE LIMA","end":"AV CONSELHEIRO CARRÃO","num":"2929"},{"dn":"61926","razao":"Oxxy Motors Com de Veículos Ltda","cnpj":"08665272000112","termo":"PENDENTE TERMO ASSINADO","gcm":"JANAINA DE SOUZA LIMA","end":"RUA ANTON PHILIPS","num":"186"},{"dn":"61974","razao":"W L MULTIMARCAS LTDA","cnpj":"29797881000103","termo":"PENDENTE TERMO ASSINADO","gcm":"SEM GCM","end":"","num":""},{"dn":"62219","razao":"G.P.S MOTORS COMERCIO DE VEICULOS EIRELI","cnpj":"09357546000179","termo":"PENDENTE TERMO ASSINADO","gcm":"JANAINA DE SOUZA LIMA","end":"AVENIDA DOUTOR TIMOTEO PENTEADO","num":"2715"},{"dn":"62714","razao":"R.A.D. AUTO SOLUTION ASSESSORIA","cnpj":"38000767000193","termo":"PENDENTE TERMO ASSINADO","gcm":"SANDRA AKEMI KIMURA","end":"RUA AMARAL GAMA","num":"333"},{"dn":"62750","razao":"B & B MULTIMARCAS LTDA","cnpj":"20461317000132","termo":"PENDENTE TERMO ASSINADO","gcm":"SANDRA AKEMI KIMURA","end":"","num":""},{"dn":"62838","razao":"NIVECAR AUTOMOVEIS LTDA","cnpj":"66752791000114","termo":"PENDENTE TERMO ASSINADO","gcm":"KARINA SILVA SANT ANNA","end":"AVENIDA MARECHAL TITO","num":"1315"},{"dn":"63061","razao":"G11 COMERCIO DE VEICULOS LTDA","cnpj":"44528029000116","termo":"PENDENTE TERMO ASSINADO","gcm":"SANDRA AKEMI KIMURA","end":"R IVAN FLEURI MEIRELES","num":"36"},{"dn":"63064","razao":"TOM CAR AUTOMOVEIS LTDA","cnpj":"40858161000135","termo":"PENDENTE TERMO ASSINADO","gcm":"BARBARA APARECIDA ALVES VARA","end":"AVENIDA JOAQUINA RAMALHO","num":"950"},{"dn":"63194","razao":"FF AUTOMOTIVE","cnpj":"34012066000113","termo":"PENDENTE TERMO ASSINADO","gcm":"ADILSON VIEIRA DE LIMA","end":"AVENIDA CONSELHEIRO CARRAO","num":"595"},{"dn":"63205","razao":"MARONNA COMERCIO DE VEICULOS LTDA","cnpj":"03449298000100","termo":"PENDENTE TERMO ASSINADO","gcm":"SANDRA AKEMI KIMURA","end":"AVENIDA ENGENHEIRO CAETANO ALVARES","num":"4676"},{"dn":"63339","razao":"SALOCAR VEICULOS LTDA","cnpj":"59506048000119","termo":"PENDENTE TERMO ASSINADO","gcm":"BARBARA APARECIDA ALVES VARA","end":"AVENIDA INAJAR DE SOUZA","num":"627"},{"dn":"63596","razao":"CONTINENTAL PARQUE AUTOMOVEIS LTDA","cnpj":"08104714000151","termo":"PENDENTE TERMO ASSINADO","gcm":"RITA DE CASSIA DECHIUCIO","end":"AVENIDA TIRADENTES","num":"3361"},{"dn":"63775","razao":"M.V.M CAR LTDA","cnpj":"01912388000160","termo":"PENDENTE TERMO ASSINADO","gcm":"EDIVANIA FRANCISCA MARCHIORI","end":"RUA CHICO PONTES","num":"563"}];
+  var LISTA_KEY = "termo_acelera_lista_v1";
+  var lojas = LOJAS_PADRAO.slice();
+  var selecionada = null;   // índice da loja escolhida
+  var abertos = {};         // GCMs expandidos
+
+  function carregarLista(){
+    try{
+      var s = JSON.parse(localStorage.getItem(LISTA_KEY));
+      if(s && s.length){ lojas = s; el("btn-padrao").style.display = ""; }
+    }catch(e){}
+  }
+  function norm(t){ return (t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase(); }
+  function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+  function desenharLista(){
+    var q = norm(el("gcm-busca").value).trim();
+    var qd = q.replace(/\D/g,"");
+    var grupos = {};
+    lojas.forEach(function(l, i){
+      if(q){
+        var ok = norm(l.gcm).indexOf(q) !== -1 || norm(l.razao).indexOf(q) !== -1 ||
+                 (qd && l.cnpj.replace(/\D/g,"").indexOf(qd) !== -1);
+        if(!ok) return;
+      }
+      (grupos[l.gcm] = grupos[l.gcm] || []).push(i);
+    });
+    var nomes = Object.keys(grupos).sort(function(a,b){
+      if(a === "SEM GCM") return 1; if(b === "SEM GCM") return -1;
+      return a.localeCompare(b, "pt-BR");
+    });
+    var box = el("gcm-list");
+    if(!nomes.length){ box.innerHTML = '<div class="gcm-empty">Nenhum resultado.</div>'; return; }
+
+    box.innerHTML = nomes.map(function(g){
+      var aberto = q ? true : !!abertos[g];
+      var itens = grupos[g].map(function(i){
+        var l = lojas[i];
+        var tag = /N[ÃA]O PARTICIPA/i.test(l.termo) ? '<span class="tag">não participa</span>' : '';
+        return '<button type="button" class="loja'+(i===selecionada?' sel':'')+'" data-i="'+i+'">' +
+               '<span>'+esc(l.razao)+tag+'</span><span class="cnpj">'+esc(formatarCnpj(l.cnpj))+'</span></button>';
+      }).join("");
+      return '<div class="gcm-item'+(aberto?' open':'')+(g==="SEM GCM"?' sem':'')+'" data-g="'+esc(g)+'">' +
+             '<button type="button" class="gcm-row"><span class="chev">▶</span><span class="name">'+
+             (g==="SEM GCM"?"Sem GCM":esc(g))+'</span><span class="count">'+grupos[g].length+
+             '</span></button><div class="loja-list">'+itens+'</div></div>';
+    }).join("");
+  }
+
+  function selecionarLoja(i){
+    var l = lojas[i];
+    selecionada = i;
+    // limpa tudo antes, para não misturar dados de lojas diferentes
+    FIELDS.forEach(function(f){ el(f).value = ""; });
+    el("razao_social").value   = l.razao;
+    el("cnpj").value           = formatarCnpj(l.cnpj);
+    el("numero_dn").value      = l.dn;
+    el("endereco_sede").value  = l.end;
+    el("numero_sede").value    = l.num;
+    render();
+    desenharLista();
+    var faltam = [];
+    if(!l.end) faltam.push("endereço");
+    if(!l.num) faltam.push("nº");
+    var msg = "✔ " + l.razao + " preenchida.";
+    msg += " Complete manualmente: bairro, cidade, UF e telefone";
+    msg += faltam.length ? " (e também " + faltam.join(" e ") + ", que não constam na planilha)." : ".";
+    var m = el("gcm-msg"); m.textContent = msg; m.className = "gcm-msg ok";
+    if(window.innerWidth <= 980){ el("razao_social").scrollIntoView({behavior:"smooth", block:"center"}); }
+  }
+
+  function initLista(){
+    carregarLista();
+    desenharLista();
+
+    el("gcm-list").addEventListener("click", function(e){
+      var lojaBtn = e.target.closest(".loja");
+      if(lojaBtn){ selecionarLoja(parseInt(lojaBtn.getAttribute("data-i"), 10)); return; }
+      var row = e.target.closest(".gcm-row");
+      if(row){
+        var item = row.parentNode, g = item.getAttribute("data-g");
+        abertos[g] = !item.classList.contains("open");
+        item.classList.toggle("open", abertos[g]);
+      }
+    });
+    el("gcm-busca").addEventListener("input", desenharLista);
+
+    // Atualizar a lista a partir de uma nova planilha (.xlsx) — mesmas colunas:
+    // A=DN, C=Razão Social, E=CNPJ, I=Termo Acelera, M=GCM, N=Endereço, O=Nº
+    el("btn-planilha").addEventListener("click", function(){ el("file-planilha").click(); });
+    el("file-planilha").addEventListener("change", function(ev){
+      var file = ev.target.files[0];
+      ev.target.value = "";
+      if(!file) return;
+      if(typeof XLSX === "undefined"){ alert("Biblioteca de leitura de planilhas não carregou. Verifique a conexão e tente de novo."); return; }
+      var reader = new FileReader();
+      reader.onload = function(){
+        try{
+          var wb = XLSX.read(reader.result, {type:"array"});
+          var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:""});
+          var nova = [];
+          rows.slice(1).forEach(function(r){
+            var razao = String(r[2]||"").trim();
+            if(!razao) return;
+            nova.push({
+              dn:String(r[0]||"").trim(), razao:razao, cnpj:String(r[4]||"").trim(),
+              termo:String(r[8]||"").trim(), gcm:String(r[12]||"").trim() || "SEM GCM",
+              end:String(r[13]||"").trim(), num:String(r[14]||"").trim()
+            });
+          });
+          if(!nova.length){ alert("Não encontrei lojas nessa planilha. Confira se as colunas seguem o mesmo modelo."); return; }
+          lojas = nova; selecionada = null; abertos = {};
+          try{ localStorage.setItem(LISTA_KEY, JSON.stringify(nova)); }catch(e){}
+          el("btn-padrao").style.display = "";
+          desenharLista();
+          var m = el("gcm-msg"); m.textContent = "Lista atualizada: " + nova.length + " lojas carregadas."; m.className = "gcm-msg ok";
+        }catch(err){ alert("Não consegui ler essa planilha."); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+    el("btn-padrao").addEventListener("click", function(){
+      try{ localStorage.removeItem(LISTA_KEY); }catch(e){}
+      lojas = LOJAS_PADRAO.slice(); selecionada = null; abertos = {};
+      el("btn-padrao").style.display = "none";
+      desenharLista();
+      var m = el("gcm-msg"); m.textContent = "Lista original restaurada."; m.className = "gcm-msg";
+    });
+  }
+  initLista();
+})();
+</script>
+</body>
+</html>
